@@ -1,11 +1,8 @@
-"""Pruebas de basedatos.py con una base SQLite en memoria.
+"""Pruebas de pedidos y reportes de basedatos.py.
 
-Cada prueba recibe una base nueva y vacía (con el catálogo de libreria.json ya
-importado), así las pruebas no se afectan entre sí ni tocan data/libreria.db.
+La fixture `sesion` (en conftest.py) da a cada prueba una base SQLite en
+memoria nueva, con el catálogo de libreria.json ya importado.
 """
-
-from collections.abc import Iterator
-from pathlib import Path
 
 import pytest
 from sqlalchemy.orm import Session
@@ -13,22 +10,11 @@ from sqlalchemy.orm import Session
 from libreria import basedatos as bd
 from libreria.almacenamiento import cargar_datos
 from libreria.excepciones import LibreriaError, LibroInvalidoError
-
-CATALOGO = Path(__file__).parent.parent / "data" / "libreria.json"
+from tests.conftest import CATALOGO
 
 CIEN_AÑOS = "978-607-07-1234-5"  # 12 ejemplares, $349.90
 NOVENTA_OCHENTA_Y_CUATRO = "978-607-11-9876-3"  # 1984: 0 ejemplares
 RAYUELA = "978-84-9793-563-2"  # 5 ejemplares, $399.50
-
-
-@pytest.fixture
-def sesion() -> Iterator[Session]:
-    motor = bd.crear_motor("sqlite://")  # "sqlite://" = base en memoria
-    bd.crear_esquema(motor)
-    with Session(motor) as s:
-        bd.importar_catalogo(s, cargar_datos(CATALOGO))
-        yield s
-    motor.dispose()
 
 
 def stock(sesion: Session, isbn: str) -> int:

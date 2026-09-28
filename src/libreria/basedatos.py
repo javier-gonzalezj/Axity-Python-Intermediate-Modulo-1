@@ -64,6 +64,27 @@ class StockInsuficienteError(LibreriaError):
     """No hay suficientes ejemplares para surtir el pedido."""
 
 
+class LibroNoEncontradoError(LibroInvalidoError):
+    """El libro indicado no existe en la base."""
+
+
+class RegistroEnUsoError(LibreriaError):
+    """No se puede borrar un registro porque otros dependen de él (p. ej. tiene pedidos)."""
+
+
+class TransicionEstatusError(LibreriaError):
+    """El pedido no puede pasar de su estatus actual al solicitado."""
+
+
+# Estatus al que puede pasar un pedido desde cada estatus
+TRANSICIONES: dict[str, set[str]] = {
+    "pendiente": {"pagado", "cancelado"},
+    "pagado": {"enviado", "cancelado"},
+    "enviado": set(),  # ya salió: no se puede cancelar
+    "cancelado": set(),
+}
+
+
 # ---------------------------------------------------------------------------
 # Tablas (modelos de SQLAlchemy)
 # ---------------------------------------------------------------------------
@@ -306,6 +327,63 @@ def listar_libros(sesion: Session) -> list[Libro]:
     return [_a_libro(fila) for fila in filas]
 
 
+def actualizar_libro(
+    sesion: Session,
+    isbn: str,
+    *,
+    precio: float | None = None,
+    cantidad_disponible: int | None = None,
+    titulo: str | None = None,
+    editorial: str | None = None,
+) -> Libro:
+    """Cambia los campos indicados; los que se dejan en None no se tocan.
+
+    Los datos nuevos pasan por el modelo Libro antes de guardarse, así se
+    aplican las mismas reglas (precio >= 0, título no vacío, etc.).
+    """
+    fila = sesion.get(LibroDB, isbn)
+    if fila is None:
+        raise LibroNoEncontradoError(f"No existe el libro {isbn}")
+
+    cambios: dict[str, Any] = {
+        "precio": precio,
+        "cantidad_disponible": cantidad_disponible,
+        "titulo": titulo,
+        "editorial": editorial,
+    }
+    cambios = {campo: valor for campo, valor in cambios.items() if valor is not None}
+    if "cantidad_disponible" in cambios:
+        cambios["en_stock"] = cambios["cantidad_disponible"] > 0
+
+    actualizado = Libro.desde_dict({**_a_libro(fila).a_dict(), **cambios})  # valida
+
+    fila.precio = actualizado.precio
+    fila.cantidad_disponible = actualizado.cantidad_disponible
+    fila.titulo = actualizado.titulo
+    fila.editorial = actualizado.editorial
+    sesion.commit()
+    log.info("Libro %s actualizado: %s", isbn, cambios)
+    return actualizado
+
+
+def eliminar_libro(sesion: Session, isbn: str) -> None:
+    """Borra un libro del catálogo, solo si nunca se ha vendido."""
+    fila = sesion.get(LibroDB, isbn)
+    if fila is None:
+        raise LibroNoEncontradoError(f"No existe el libro {isbn}")
+
+    vendido = sesion.scalar(select(PedidoItemDB.id).where(PedidoItemDB.isbn == isbn).limit(1))
+    if vendido is not None:
+        raise RegistroEnUsoError(
+            f"'{fila.titulo}' aparece en pedidos; no se puede borrar. "
+            "Deja su cantidad en 0 para retirarlo de la venta."
+        )
+
+    sesion.delete(fila)
+    sesion.commit()
+    log.info("Libro %s eliminado", isbn)
+
+
 # ---------------------------------------------------------------------------
 # Usuarios
 # ---------------------------------------------------------------------------
@@ -320,6 +398,68 @@ def crear_usuario(sesion: Session, nombre: str, email: str, telefono: str | None
         raise LibreriaError(f"Ya existe un usuario con email {usuario.email}") from None
 
     return _a_usuario(fila)  # después del commit, fila.id ya tiene valor
+
+
+def obtener_usuario(sesion: Session, usuario_id: int) -> Usuario | None:
+    fila = sesion.get(UsuarioDB, usuario_id)
+    return _a_usuario(fila) if fila else None
+
+
+def buscar_usuario_por_email(sesion: Session, email: str) -> Usuario | None:
+    fila = sesion.scalar(select(UsuarioDB).where(UsuarioDB.email == email.strip()))
+    return _a_usuario(fila) if fila else None
+
+
+def listar_usuarios(sesion: Session) -> list[Usuario]:
+    filas = sesion.scalars(select(UsuarioDB).order_by(UsuarioDB.nombre))
+    return [_a_usuario(fila) for fila in filas]
+
+
+def actualizar_usuario(
+    sesion: Session,
+    usuario_id: int,
+    *,
+    nombre: str | None = None,
+    email: str | None = None,
+    telefono: str | None = None,
+) -> Usuario:
+    """Cambia los campos indicados; los que se dejan en None no se tocan."""
+    fila = sesion.get(UsuarioDB, usuario_id)
+    if fila is None:
+        raise UsuarioNoEncontradoError(f"No existe el usuario {usuario_id}")
+
+    actualizado = Usuario(  # valida los datos nuevos con las reglas del modelo
+        id=fila.id,
+        nombre=nombre if nombre is not None else fila.nombre,
+        email=email if email is not None else fila.email,
+        telefono=telefono if telefono is not None else fila.telefono,
+    )
+    fila.nombre = actualizado.nombre
+    fila.email = actualizado.email
+    fila.telefono = actualizado.telefono
+    try:
+        sesion.commit()
+    except IntegrityError:
+        sesion.rollback()
+        raise LibreriaError(f"Ya existe un usuario con email {actualizado.email}") from None
+
+    log.info("Usuario %s actualizado", usuario_id)
+    return actualizado
+
+
+def eliminar_usuario(sesion: Session, usuario_id: int) -> None:
+    """Borra un usuario, solo si no tiene pedidos (para no perder el historial de ventas)."""
+    fila = sesion.get(UsuarioDB, usuario_id)
+    if fila is None:
+        raise UsuarioNoEncontradoError(f"No existe el usuario {usuario_id}")
+    if fila.pedidos:
+        raise RegistroEnUsoError(
+            f"{fila.nombre} tiene {len(fila.pedidos)} pedido(s); no se puede borrar"
+        )
+
+    sesion.delete(fila)
+    sesion.commit()
+    log.info("Usuario %s eliminado", usuario_id)
 
 
 # ---------------------------------------------------------------------------
@@ -378,13 +518,52 @@ def pedidos_de_usuario(sesion: Session, usuario_id: int) -> list[Pedido]:
     return [_a_pedido(fila) for fila in filas]
 
 
+def listar_pedidos(sesion: Session, estatus: str | None = None) -> list[Pedido]:
+    """Todos los pedidos, o solo los de un estatus."""
+    consulta = select(PedidoDB).order_by(PedidoDB.fecha)
+    if estatus is not None:
+        consulta = consulta.where(PedidoDB.estatus == estatus)
+    return [_a_pedido(fila) for fila in sesion.scalars(consulta)]
+
+
+def cambiar_estatus(sesion: Session, pedido_id: int, nuevo: str) -> Pedido:
+    """Avanza el pedido: pendiente -> pagado -> enviado.
+
+    Para cancelar usa cancelar_pedido(), que además regresa el stock.
+    """
+    if nuevo == "cancelado":
+        cancelar_pedido(sesion, pedido_id)
+    else:
+        pedido = sesion.get(PedidoDB, pedido_id)
+        if pedido is None:
+            raise PedidoNoEncontradoError(f"No existe el pedido {pedido_id}")
+        if nuevo not in TRANSICIONES.get(pedido.estatus, set()):
+            raise TransicionEstatusError(
+                f"El pedido {pedido_id} no puede pasar de '{pedido.estatus}' a '{nuevo}'"
+            )
+        pedido.estatus = nuevo
+        sesion.commit()
+        log.info("Pedido %s ahora está %s", pedido_id, nuevo)
+
+    resultado = obtener_pedido(sesion, pedido_id)
+    assert resultado is not None
+    return resultado
+
+
 def cancelar_pedido(sesion: Session, pedido_id: int) -> None:
-    """Marca el pedido como cancelado y regresa los libros al inventario (soft delete)."""
+    """Marca el pedido como cancelado y regresa los libros al inventario (soft delete).
+
+    Cancelar un pedido ya cancelado no hace nada; uno enviado no se puede cancelar.
+    """
     pedido = sesion.get(PedidoDB, pedido_id)
     if pedido is None:
         raise PedidoNoEncontradoError(f"No existe el pedido {pedido_id}")
     if pedido.estatus == "cancelado":
         return
+    if "cancelado" not in TRANSICIONES[pedido.estatus]:
+        raise TransicionEstatusError(
+            f"El pedido {pedido_id} ya está '{pedido.estatus}'; no se puede cancelar"
+        )
 
     for item in pedido.items:
         item.libro.cantidad_disponible += item.cantidad
