@@ -38,7 +38,7 @@ MAX_GENEROS = 3
 MAX_AUTORES = 3
 # Open Library pide identificar la aplicación. Si agregas un correo de contacto,
 # p. ej. "libreria-m7/0.1 (tu@correo.com)", te permite más peticiones por segundo.
-CABECERAS = {"User-Agent": "libreria/0.1 (proyecto del curso de Python)"}
+CABECERAS = {"User-Agent": "libreria-m7/0.1 (proyecto del curso de Python)"}
 
 
 class DatosISBN(BaseModel):

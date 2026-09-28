@@ -1,0 +1,11 @@
+Migraciones de la base de datos de la librería (Alembic).
+
+  poetry run alembic upgrade head        # aplica todas las migraciones pendientes
+  poetry run alembic downgrade -1        # revierte la última
+  poetry run alembic current             # versión actual de la base
+  poetry run alembic history             # lista de migraciones
+  poetry run alembic check               # ¿los modelos coinciden con las migraciones?
+
+Para un cambio nuevo: modifica las clases *DB en src/libreria/basedatos.py y
+  poetry run alembic revision --autogenerate --rev-id 0003 -m "descripcion"
+Revisa SIEMPRE el archivo generado antes de aplicarlo.
