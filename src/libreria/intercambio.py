@@ -13,16 +13,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from libreria_m7.catalogo import agregar_libro
-from libreria_m7.excepciones import (
+from libreria.catalogo import agregar_libro
+from libreria.excepciones import (
     ArchivoCSVInvalidoError,
     ArchivoNoEncontradoError,
     CodificacionArchivoError,
     LibroInvalidoError,
     PermisoArchivoError,
 )
-from libreria_m7.modelos import Libreria, Libro
-from libreria_m7.utilidades import escritura_atomica
+from libreria.modelos import Libreria, Libro
+from libreria.utilidades import escritura_atomica
 
 log = logging.getLogger(__name__)
 

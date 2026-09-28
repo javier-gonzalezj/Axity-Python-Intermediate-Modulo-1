@@ -2,8 +2,8 @@
 
 import logging
 
-from libreria_m7.excepciones import LibroInvalidoError
-from libreria_m7.modelos import Libreria, Libro
+from libreria.excepciones import LibroInvalidoError
+from libreria.modelos import Libreria, Libro
 
 log = logging.getLogger(__name__)
 

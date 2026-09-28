@@ -3,7 +3,7 @@
 import math
 from itertools import batched
 
-from libreria_m7.modelos import Libreria, Libro
+from libreria.modelos import Libreria, Libro
 
 
 def _mostrar_libro(libro: Libro) -> None:

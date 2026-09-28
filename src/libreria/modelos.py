@@ -2,7 +2,7 @@ from typing import Any, Self, TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from libreria_m7.excepciones import LibroInvalidoError
+from libreria.excepciones import LibroInvalidoError
 
 
 class Autor(BaseModel):

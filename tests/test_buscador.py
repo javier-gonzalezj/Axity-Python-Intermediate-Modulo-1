@@ -12,8 +12,8 @@ from typing import Any
 import httpx
 import pytest
 
-from libreria_m7 import buscador, utilidades
-from libreria_m7.excepciones import ServicioExternoError
+from libreria import buscador, utilidades
+from libreria.excepciones import ServicioExternoError
 
 # Respuestas simplificadas con la misma forma que las reales de Open Library,
 # indexadas por la ruta de la URL

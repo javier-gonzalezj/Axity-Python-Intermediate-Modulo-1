@@ -5,14 +5,14 @@ import logging
 from pathlib import Path
 from typing import Any, cast
 
-from libreria_m7.excepciones import (
+from libreria.excepciones import (
     ArchivoJSONInvalidoError,
     ArchivoNoEncontradoError,
     CodificacionArchivoError,
     PermisoArchivoError,
 )
-from libreria_m7.modelos import Libreria, Libro
-from libreria_m7.utilidades import escritura_atomica
+from libreria.modelos import Libreria, Libro
+from libreria.utilidades import escritura_atomica
 
 log = logging.getLogger(__name__)
 

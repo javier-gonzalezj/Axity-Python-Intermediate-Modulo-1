@@ -3,10 +3,10 @@
 import logging
 from typing import Any
 
-from libreria_m7.buscador import DatosISBN, buscar_por_isbn
-from libreria_m7.catalogo import filtrar_libros
-from libreria_m7.excepciones import ServicioExternoError
-from libreria_m7.modelos import Libreria, Libro
+from libreria.buscador import DatosISBN, buscar_por_isbn
+from libreria.catalogo import filtrar_libros
+from libreria.excepciones import ServicioExternoError
+from libreria.modelos import Libreria, Libro
 
 log = logging.getLogger(__name__)
 

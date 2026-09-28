@@ -4,16 +4,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Final
 
-from libreria_m7.almacenamiento import cargar_datos, guardar_datos
-from libreria_m7.buscador import descargar_portada, nombre_archivo_portada
-from libreria_m7.captura import capturar_filtros, capturar_libro
-from libreria_m7.catalogo import agregar_libro
-from libreria_m7.excepciones import LibreriaError
-from libreria_m7.intercambio import exportar_json, importar_csv
-from libreria_m7.modelos import Libreria, Libro
-from libreria_m7.registro import configurar_logging
-from libreria_m7.utilidades import cronometro
-from libreria_m7.vista import mostrar_libreria, mostrar_libros
+from libreria.almacenamiento import cargar_datos, guardar_datos
+from libreria.buscador import descargar_portada, nombre_archivo_portada
+from libreria.captura import capturar_filtros, capturar_libro
+from libreria.catalogo import agregar_libro
+from libreria.excepciones import LibreriaError
+from libreria.intercambio import exportar_json, importar_csv
+from libreria.modelos import Libreria, Libro
+from libreria.registro import configurar_logging
+from libreria.utilidades import cronometro
+from libreria.vista import mostrar_libreria, mostrar_libros
 
 log = logging.getLogger(__name__)
 

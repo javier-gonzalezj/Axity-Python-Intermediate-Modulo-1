@@ -2,7 +2,9 @@
 
 Programa de consola para administrar el catálogo de una librería: consultar, filtrar, agregar e importar libros, guardados en un archivo JSON.
 
-Proyecto del curso **Axity Python Fundamental**.
+Para los objetivos del nivel intermedio se toma el código base del último módulo del nivel básico.
+
+Proyecto del curso **Axity Python Intermediate**.
 
 ## Características
 
@@ -93,14 +95,14 @@ Hay un ejemplo en [`data/ejemplos/libros_nuevos.csv`](data/ejemplos/libros_nuevo
 ## Estructura del proyecto
 
 ```
-libreria_m7/
+libreria/
 ├── data/
 │   ├── libreria.json          # catálogo principal
 │   ├── ejemplos/              # CSV de ejemplo para importar
 │   ├── exportaciones/         # resultados de filtros exportados (ignorado por git)
 │   └── portadas/              # portadas descargadas (ignorado por git)
 ├── logs/                      # archivo de log (ignorado por git)
-├── src/libreria_m7/
+├── src/libreria/
 │   ├── main.py                # punto de entrada y menú
 │   ├── modelos.py             # modelos Libro y Autor (pydantic)
 │   ├── almacenamiento.py      # lectura y escritura del catálogo JSON
@@ -115,30 +117,6 @@ libreria_m7/
 ├── tests/
 │   └── test_buscador.py
 └── pyproject.toml
-```
-
-## Desarrollo
-
-### Pruebas
-
-```bash
-poetry run pytest
-```
-
-Las pruebas de `buscador.py` usan `httpx.MockTransport` para simular las respuestas de Open Library, así que no necesitan conexión a internet.
-
-### Calidad del código
-
-| Herramienta | Comando | Qué revisa |
-|---|---|---|
-| [ruff](https://docs.astral.sh/ruff/) | `poetry run ruff check` | Estilo, errores comunes y orden de imports |
-| ruff format | `poetry run ruff format` | Formato del código |
-| [mypy](https://mypy-lang.org) | `poetry run mypy` | Tipos, en modo estricto |
-
-Las tres se ejecutan automáticamente en cada commit con [pre-commit](https://pre-commit.com). Para correrlas sobre todo el proyecto:
-
-```bash
-poetry run pre-commit run --all-files
 ```
 
 ## Dependencias principales

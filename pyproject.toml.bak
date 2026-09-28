@@ -1,5 +1,5 @@
 [project]
-name = "libreria"
+name = "libreria-m7"
 version = "0.1.0"
 description = "Programa de administracion de mi libreria. Python Fundamental Modulo 7"
 authors = [

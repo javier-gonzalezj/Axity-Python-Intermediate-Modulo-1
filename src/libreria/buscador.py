@@ -24,8 +24,8 @@ from typing import Any
 import httpx
 from pydantic import BaseModel, Field
 
-from libreria_m7.excepciones import ServicioExternoError
-from libreria_m7.utilidades import reintentar
+from libreria.excepciones import ServicioExternoError
+from libreria.utilidades import reintentar
 
 log = logging.getLogger(__name__)
 
